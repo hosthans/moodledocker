@@ -1090,10 +1090,13 @@ class grade_report_grader extends grade_report {
                 }
 
                 $gradepass = ' gradefail ';
+                $gradepassicon = $OUTPUT->pix_icon('i/invalid', get_string('fail', 'grades'));
                 if ($grade->is_passed($item)) {
                     $gradepass = ' gradepass ';
+                    $gradepassicon = $OUTPUT->pix_icon('i/valid', get_string('pass', 'grades'));
                 } else if (is_null($grade->is_passed($item))) {
                     $gradepass = '';
+                    $gradepassicon = '';
                 }
 
                 // if in editing mode, we need to print either a text box
@@ -1145,10 +1148,12 @@ class grade_report_grader extends grade_report {
 
                             // invalid grade if gradeval < 1
                             if ($gradeval < 1) {
-                                $itemcell->text .= "<span class='gradevalue{$hidden}{$gradepass}'>-</span>";
+                                $itemcell->text .= $gradepassicon .
+                                    "<span class='gradevalue{$hidden}{$gradepass}'>-</span>";
                             } else {
                                 $gradeval = $grade->grade_item->bounded_grade($gradeval); //just in case somebody changes scale
-                                $itemcell->text .= "<span class='gradevalue{$hidden}{$gradepass}'>{$scales[$gradeval - 1]}</span>";
+                                $itemcell->text .= $gradepassicon .
+                                    "<span class='gradevalue{$hidden}{$gradepass}'>{$scales[$gradeval - 1]}</span>";
                             }
                         }
 
@@ -1162,7 +1167,7 @@ class grade_report_grader extends grade_report {
                                           . '" type="text" class="text" title="'. $strgrade .'" name="grade['
                                           .$userid.'][' .$item->id.']" id="grade_'.$userid.'_'.$item->id.'" value="'.$value.'" />';
                         } else {
-                            $itemcell->text .= "<span class='gradevalue{$hidden}{$gradepass}'>" .
+                            $itemcell->text .= $gradepassicon . "<span class='gradevalue{$hidden}{$gradepass}'>" .
                                     format_float($gradeval, $decimalpoints) . "</span>";
                         }
                     }
@@ -1196,7 +1201,7 @@ class grade_report_grader extends grade_report {
                     }
 
                     if ($item->needsupdate) {
-                        $itemcell->text .= "<span class='gradingerror{$hidden}{$gradepass}'>" . $error . "</span>";
+                        $itemcell->text .= $gradepassicon . "<span class='gradingerror{$hidden}{$gradepass}'>" . $error . "</span>";
                     } else {
                         // The max and min for an aggregation may be different to the grade_item.
                         if (!is_null($gradeval)) {
@@ -1204,7 +1209,7 @@ class grade_report_grader extends grade_report {
                             $item->grademin = $grade->get_grade_min();
                         }
 
-                        $itemcell->text .= "<span class='gradevalue{$hidden}{$gradepass}'>" .
+                        $itemcell->text .= $gradepassicon . "<span class='gradevalue{$hidden}{$gradepass}'>" .
                                 grade_format_gradevalue($gradeval, $item, true, $gradedisplaytype, null) . "</span>";
                         if ($showanalysisicon) {
                             $itemcell->text .= $this->gtree->get_grade_analysis_icon($grade);
@@ -1672,9 +1677,10 @@ class grade_report_grader extends grade_report {
         }
 
         $name = $element['object']->get_name();
+        $nameunescaped = $element['object']->get_name(false);
         $describedbyid = uniqid();
         $courseheader = html_writer::tag('span', $name, [
-            'title' => $name,
+            'title' => $nameunescaped,
             'class' => 'gradeitemheader',
             'aria-describedby' => $describedbyid
         ]);
@@ -1776,9 +1782,10 @@ class grade_report_grader extends grade_report {
      */
     protected static function filter_collapsed_categories($courseid, $collapsed) {
         global $DB;
-        if (empty($collapsed)) {
-            $collapsed = array('aggregatesonly' => array(), 'gradesonly' => array());
-        }
+        // Ensure we always have an element for aggregatesonly and another for gradesonly, no matter it's empty.
+        $collapsed['aggregatesonly'] = $collapsed['aggregatesonly'] ?? [];
+        $collapsed['gradesonly'] = $collapsed['gradesonly'] ?? [];
+
         if (empty($collapsed['aggregatesonly']) && empty($collapsed['gradesonly'])) {
             return $collapsed;
         }
@@ -1799,12 +1806,23 @@ class grade_report_grader extends grade_report {
      */
     protected static function get_collapsed_preferences($courseid) {
         if ($collapsed = get_user_preferences('grade_report_grader_collapsed_categories'.$courseid)) {
-            return json_decode($collapsed, true);
+            $collapsed = json_decode($collapsed, true);
+            // Ensure we always have an element for aggregatesonly and another for gradesonly, no matter it's empty.
+            $collapsed['aggregatesonly'] = $collapsed['aggregatesonly'] ?? [];
+            $collapsed['gradesonly'] = $collapsed['gradesonly'] ?? [];
+            return $collapsed;
         }
 
         // Try looking for old location of user setting that used to store all courses in one serialized user preference.
+        $collapsed = ['aggregatesonly' => [], 'gradesonly' => []]; // Use this if old settings are not found.
+        $collapsedall = [];
+        $oldprefexists = false;
         if (($oldcollapsedpref = get_user_preferences('grade_report_grader_collapsed_categories')) !== null) {
+            $oldprefexists = true;
             if ($collapsedall = unserialize_array($oldcollapsedpref)) {
+                // Ensure we always have an element for aggregatesonly and another for gradesonly, no matter it's empty.
+                $collapsedall['aggregatesonly'] = $collapsedall['aggregatesonly'] ?? [];
+                $collapsedall['gradesonly'] = $collapsedall['gradesonly'] ?? [];
                 // We found the old-style preference, filter out only categories that belong to this course and update the prefs.
                 $collapsed = static::filter_collapsed_categories($courseid, $collapsedall);
                 if (!empty($collapsed['aggregatesonly']) || !empty($collapsed['gradesonly'])) {
@@ -1813,17 +1831,21 @@ class grade_report_grader extends grade_report {
                     $collapsedall['gradesonly'] = array_diff($collapsedall['gradesonly'], $collapsed['gradesonly']);
                     if (!empty($collapsedall['aggregatesonly']) || !empty($collapsedall['gradesonly'])) {
                         set_user_preference('grade_report_grader_collapsed_categories', serialize($collapsedall));
-                    } else {
-                        unset_user_preference('grade_report_grader_collapsed_categories');
                     }
                 }
-            } else {
-                // We found the old-style preference, but it is unreadable, discard it.
-                unset_user_preference('grade_report_grader_collapsed_categories');
             }
-        } else {
-            $collapsed = array('aggregatesonly' => array(), 'gradesonly' => array());
         }
+
+        // Arrived here, if the old pref exists and it doesn't contain
+        // more information, it means that the migration of all the
+        // data to new, by course, preferences is completed, so
+        // the old one can be safely deleted.
+        if ($oldprefexists &&
+                empty($collapsedall['aggregatesonly']) &&
+                empty($collapsedall['gradesonly'])) {
+            unset_user_preference('grade_report_grader_collapsed_categories');
+        }
+
         return $collapsed;
     }
 

@@ -258,11 +258,13 @@ $string['emaildigesttype_help'] = 'The type of notification that you will receiv
 * Digest - subjects only - you will receive one digest e-mail per day containing just the subject of each forum post.
 ';
 $string['emptymessage'] = 'Something was wrong with your post. Perhaps you left it blank, or the attachment was too big. Your changes have NOT been saved.';
+$string['errorcannotlock'] = 'You do not have the permission to lock discussions.';
+$string['errordiscussionnotfound'] = 'The discussion was not found';
 $string['erroremptymessage'] = 'Post message cannot be empty';
 $string['erroremptysubject'] = 'Post subject cannot be empty.';
 $string['errorenrolmentrequired'] = 'You must be enrolled in this course to access this content';
+$string['errorforumnotfound'] = 'The forum that this discussion belongs to was not found';
 $string['errorwhiledelete'] = 'An error occurred while deleting record.';
-$string['errorcannotlock'] = 'You do not have the permission to lock discussions.';
 $string['eventassessableuploaded'] = 'Some content has been posted.';
 $string['everyonecanchoose'] = 'Everyone can choose to be subscribed';
 $string['everyonecannowchoose'] = 'Everyone can now choose to be subscribed';
@@ -499,7 +501,7 @@ $string['parentofthispost'] = 'Parent of this post';
 $string['permalink'] = 'Permalink';
 $string['permanentlinktopost'] = 'Permanent link to this post';
 $string['permanentlinktoparentpost'] = 'Permanent link to the parent of this post';
-$string['postisprivatereply'] = 'This is a private reply. It is not visible to other participants.';
+$string['postisprivatereply'] = 'This is a private reply. It is only visible to you and anyone with the capability to view private replies, such as teachers or managers.';
 $string['pindiscussion'] = 'Pin this discussion';
 $string['pinupdated'] = 'The pin option has been updated.';
 $string['posttomygroups'] = 'Post a copy to all groups';
@@ -514,10 +516,12 @@ $string['postbymailsuccess'] = 'Your reply "{$a->subject}" was successfully post
 $string['postbymailsuccess_html'] = 'Your reply <a href="{$a->discussionurl}">{$a->subject}</a> was successfully posted.';
 $string['postbyuser'] = '{$a->post} by {$a->user}';
 $string['postincontext'] = 'See this post in context';
+$string['postmailinfo'] = 'This is a copy of a message posted in {$a}.';
 $string['postmailinfolink'] = 'This is a copy of a message posted in {$a->coursename}.
 
 To reply click on this link: {$a->replylink}';
 $string['postmailnow'] = '<p>This post will be mailed out immediately to all forum subscribers.</p>';
+$string['postmailreply'] = 'To reply click on this link: {$a}';
 $string['postmailsubject'] = '{$a->courseshortname}: {$a->subject}';
 $string['postrating1'] = 'Mostly separate knowing';
 $string['postrating2'] = 'Separate and connected';

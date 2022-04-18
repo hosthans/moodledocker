@@ -812,6 +812,20 @@ class admin_category implements parentable_part_of_admin_tree {
     }
 
     /**
+     * Get the URL to view this page.
+     *
+     * @return moodle_url
+     */
+    public function get_settings_page_url(): moodle_url {
+        return new moodle_url(
+            '/admin/category.php',
+            [
+                'category' => $this->name,
+            ]
+        );
+    }
+
+    /**
      * Returns a reference to the part_of_admin_tree object with internal name $name.
      *
      * @param string $name The internal name of the object we want.
@@ -3879,6 +3893,9 @@ class admin_setting_configduration extends admin_setting {
         if ($this->validatefunction) {
             return call_user_func($this->validatefunction, $data);
         } else {
+            if ($data < 0) {
+                return get_string('errorsetting', 'admin');
+            }
             return '';
         }
     }
@@ -3964,9 +3981,6 @@ class admin_setting_configduration extends admin_setting {
         }
 
         $seconds = (int)($data['v']*$data['u']);
-        if ($seconds < 0) {
-            return get_string('errorsetting', 'admin');
-        }
 
         // Validate the new setting.
         $error = $this->validate_setting($seconds);
@@ -9762,33 +9776,8 @@ class admin_setting_enablemobileservice extends admin_setting_configcheckbox {
 
              // Allow rest:use capability for authenticated user.
              $this->set_protocol_cap(true);
-
          } else {
-             //disable web service system if no other services are enabled
-             $otherenabledservices = $DB->get_records_select('external_services',
-                     'enabled = :enabled AND (shortname != :shortname OR shortname IS NULL)', array('enabled' => 1,
-                         'shortname' => MOODLE_OFFICIAL_MOBILE_SERVICE));
-             if (empty($otherenabledservices)) {
-                 set_config('enablewebservices', false);
-
-                 // Also disable REST server.
-                 $activeprotocols = empty($CFG->webserviceprotocols) ? array() : explode(',', $CFG->webserviceprotocols);
-
-                 $protocolkey = array_search('rest', $activeprotocols);
-                 if ($protocolkey !== false) {
-                    unset($activeprotocols[$protocolkey]);
-                    $updateprotocol = true;
-                 }
-
-                 if ($updateprotocol) {
-                    set_config('webserviceprotocols', implode(',', $activeprotocols));
-                 }
-
-                 // Disallow rest:use capability for authenticated user.
-                 $this->set_protocol_cap(false);
-             }
-
-             //disable the mobile service
+             // Disable the mobile service.
              $mobileservice = $webservicemanager->get_external_service_by_shortname(MOODLE_OFFICIAL_MOBILE_SERVICE);
              $mobileservice->enabled = 0;
              $webservicemanager->update_external_service($mobileservice);
@@ -10129,7 +10118,7 @@ class admin_setting_webservicesoverview extends admin_setting {
 
         /// 8. Create token for the specific user
         $row = array();
-        $url = new moodle_url("/admin/webservice/tokens.php?sesskey=" . sesskey() . "&action=create");
+        $url = new moodle_url('/admin/webservice/tokens.php', ['action' => 'create']);
         $row[0] = "8. " . html_writer::tag('a', get_string('createtokenforuser', 'webservice'),
                         array('href' => $url));
         $row[1] = "";
